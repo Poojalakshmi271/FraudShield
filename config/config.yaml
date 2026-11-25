@@ -1,0 +1,161 @@
+# FraudShield Configuration File
+# ============================================================
+
+project:
+  name: "FraudShield"
+  version: "1.0.0"
+  description: "Explainable AI-Based Financial Fraud Detection and Risk Scoring System"
+  random_seed: 42
+
+# ============================================================
+# DATA CONFIGURATION
+# ============================================================
+data:
+  raw_path: "data/raw/creditcard.csv"
+  processed_path: "data/processed/"
+  kaggle_dataset: "mlg-ulb/creditcardfraud"
+  required_columns:
+    - "Time"
+    - "Amount"
+    - "Class"
+  pca_features: ["V1","V2","V3","V4","V5","V6","V7","V8","V9","V10",
+                  "V11","V12","V13","V14","V15","V16","V17","V18","V19","V20",
+                  "V21","V22","V23","V24","V25","V26","V27","V28"]
+  target_column: "Class"
+  expected_shape:
+    min_rows: 280000
+    max_rows: 290000
+    n_cols: 31
+
+# ============================================================
+# SPLITTING CONFIGURATION
+# ============================================================
+splitting:
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  stratify: true
+  random_seed: 42
+
+# ============================================================
+# PREPROCESSING CONFIGURATION
+# ============================================================
+preprocessing:
+  amount_scaler: "RobustScaler"
+  time_modulo: 86400          # seconds in a day for time-of-day feature
+  log_amount: true            # apply log1p transformation to Amount
+  cyclical_encoding: true     # sine/cosine encoding for hour-of-day
+
+# ============================================================
+# RESAMPLING CONFIGURATION
+# ============================================================
+resampling:
+  smote_random_state: 42
+  smote_k_neighbors: 5
+  sampling_strategy: "auto"
+
+# ============================================================
+# MODEL CONFIGURATION
+# ============================================================
+models:
+  logistic_regression:
+    max_iter: 1000
+    random_state: 42
+    solver: "lbfgs"
+    C: 1.0
+    class_weight: "balanced"
+  random_forest:
+    n_estimators: 200
+    max_depth: 10
+    min_samples_split: 5
+    min_samples_leaf: 2
+    random_state: 42
+    n_jobs: -1
+    class_weight: "balanced"
+  xgboost:
+    n_estimators: 300
+    max_depth: 6
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    use_label_encoder: false
+    eval_metric: "aucpr"
+    random_state: 42
+    n_jobs: -1
+
+# ============================================================
+# HYPERPARAMETER TUNING
+# ============================================================
+tuning:
+  cv_folds: 3
+  scoring: "average_precision"
+  n_iter: 3                   # for RandomizedSearchCV
+  random_state: 42
+
+# ============================================================
+# THRESHOLD OPTIMIZATION
+# ============================================================
+threshold:
+  metric: "f1"                # optimize threshold for F1 on validation
+  search_range: [0.05, 0.95]
+  search_steps: 100
+
+# ============================================================
+# CALIBRATION CONFIGURATION
+# ============================================================
+calibration:
+  methods: ["sigmoid", "isotonic"]
+  cv: "prefit"
+
+# ============================================================
+# RISK SCORING CONFIGURATION
+# ============================================================
+risk:
+  thresholds:
+    low: 0.20
+    medium: 0.50
+    high: 0.80
+  categories:
+    - name: "LOW"
+      label: "Low Risk"
+      color: "#28a745"
+      action: "No immediate action required. Transaction may proceed normally."
+    - name: "MEDIUM"
+      label: "Medium Risk"
+      color: "#ffc107"
+      action: "Flag for review. Consider requesting additional verification."
+    - name: "HIGH"
+      label: "High Risk"
+      color: "#fd7e14"
+      action: "Hold transaction. Initiate manual review immediately."
+    - name: "CRITICAL"
+      label: "Critical Risk"
+      color: "#dc3545"
+      action: "Block transaction. Escalate to fraud investigation team."
+  disclaimer: "DEMONSTRATION RISK CLASSIFICATIONS – SIMULATION ONLY. Not a certified financial decision system."
+
+# ============================================================
+# SHAP CONFIGURATION
+# ============================================================
+shap:
+  max_display: 20
+  background_samples: 100
+  plot_type: "beeswarm"
+
+# ============================================================
+# MODEL STORAGE
+# ============================================================
+model_storage:
+  base_path: "models/"
+  best_model_name: "best_model.joblib"
+  preprocessor_name: "preprocessor.joblib"
+  calibrated_model_name: "calibrated_model.joblib"
+  benchmark_results_name: "benchmark_results.joblib"
+
+# ============================================================
+# LOGGING CONFIGURATION
+# ============================================================
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/fraudshield.log"
